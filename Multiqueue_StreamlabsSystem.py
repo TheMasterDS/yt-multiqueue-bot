@@ -35,7 +35,7 @@ def Init():
         settings = {
             "warpworld_username": "",
             "warpworld_key": "",
-            "command_character": "!",
+            "command_character": "",
             "permission_join": "Everyone",
             "permission_next": "Owner",
         }
@@ -99,13 +99,16 @@ def ScriptToggled(state):
 
 def Execute(data):
     if data.IsFromYoutube() and data.IsChatMessage():
+        
         cmd = data.GetParam(0).lower()
-        fullWidthIndex = cmd.encode('utf_7').replace('+ACE-','!').replace('+/wE-','!').find("+MAA-")
+        encodedCC = settings['command_character'].encode('utf_7');
+        postEncodeCmd = cmd.encode('utf_7').replace(encodedCC,settings['command_character']).replace('+ACE-','!').replace('+/wE-','!')
+        fullWidthIndex = postEncodeCmd.find("+MAA-")
   
         if fullWidthIndex != -1:
             cmd = cmd[0:fullWidthIndex]
       
-        if cmd[0] != settings['command_character'] and cmd[0] != "!":
+        if postEncodeCmd[0] != settings['command_character']:
             return
         cmd = cmd[1:]
 
