@@ -6,12 +6,13 @@ import urllib
 import os
 import ctypes
 import codecs
+import re
 
 ScriptName = "YT Multiqueue Bot"
 Website = "http://little-canada.org"
 Description = "Bot to allow for interactions with Warp.World's Multiqueue from Youtube"
 Creator = "zi"
-Version = "0.0.1"
+Version = "0.0.2"
 
 base_domain = "https://api.warp.world"
 configFile = "settings.json"
@@ -54,6 +55,7 @@ def init_settings():
     settings['permission_position'] = settings['permission_join']
     settings['permission_list'] = settings['permission_join']
     settings['permission_queue'] = settings['permission_join']
+    settings['permission_replace'] = settings['permission_join']
 
     settings['permission_random'] = settings['permission_next']
     settings['permission_subnext'] = settings['permission_next']
@@ -99,7 +101,12 @@ def ScriptToggled(state):
 def Execute(data):
     if data.IsFromYoutube() and data.IsChatMessage():
         cmd = data.GetParam(0).lower()
-        if cmd[0] != settings['command_character']:
+        fullWidthIndex = cmd.encode('utf_7').replace('+ACE-','!').replace('+/wE-','!').find("+MAA-")
+  
+        if fullWidthIndex != -1:
+            cmd = cmd[0:fullWidthIndex]
+      
+        if cmd[0] != settings['command_character'] and cmd[0] != "!":
             return
         cmd = cmd[1:]
 
@@ -151,23 +158,75 @@ def WW_handle_response(res):
 
 
 def WW_join(data):
-    if data.GetParamCount() < 2:
+    
+    firstSpaceIndex = data.Message.find(" ")
+    fullWidthIndex = data.GetParam(0).encode('utf_7').replace('+ACE-','!').replace('+/wE-','!').find("+MAA-")
+    if fullWidthIndex != -1:
+        firstSpaceIndex = fullWidthIndex 
+        
+    code = data.Message[firstSpaceIndex+1:]
+    
+    if firstSpaceIndex == -1 or len(code) < 1:
         return
+    
+    #if data.GetParamCount() < 2:
+    #    return
+    #code = data.GetParam(1)
+    #if data.GetParamCount() > 2:
+    #    for x in range(2, data.GetParamCount()):
+    #       code = code + " " + data.GetParam(x)
+            
     uid = YoutubeIdtoNumber(data.User)
 
     params = {
-        "notes": data.GetParam(1),
+        "notes": code,
         "token": settings['warpworld_key'],
         "viewerID": uid,
-        "viewerName": data.UserName,
+        "viewerName": data.UserName.encode('utf8'),
+        "viewerFollow": 0,
+        "viewerSub": 0,
+        "service":"youtube",
+    }
+        
+    query = urllib.urlencode(params)        
+    url = base_domain + "/{username}/join_queue?{query}".format(username=settings['warpworld_username'], query=query)
+    WW_handle_response(Parent.GetRequest(url, headers))
+
+def WW_replace(data):
+    
+    firstSpaceIndex = data.Message.find(" ")
+    fullWidthIndex = data.GetParam(0).encode('utf_7').replace('+ACE-','!').replace('+/wE-','!').find("+MAA-")
+    if fullWidthIndex != -1:
+        firstSpaceIndex = fullWidthIndex 
+        
+    code = data.Message[firstSpaceIndex+1:]
+    
+    if firstSpaceIndex == -1 or len(code) < 1:
+        return
+    
+    #if data.GetParamCount() < 2:
+    #    return
+    #code = data.GetParam(1)
+    #if data.GetParamCount() > 2:
+    #    for x in range(2, data.GetParamCount()):
+    #       code = code + " " + data.GetParam(x)
+            
+    uid = YoutubeIdtoNumber(data.User)
+    
+    params = {
+        "notes": code,
+        "token": settings['warpworld_key'],
+        "viewerID": uid,
+        "viewerName": data.UserName.encode('utf8'),
         "viewerFollow": 0,
         "viewerSub": 0,
         "service":"youtube",
     }
     query = urllib.urlencode(params)
-    url = base_domain + "/{username}/join_queue?{query}".format(username=settings['warpworld_username'], query=query)
+    if query.find(' ') == 3:
+        query = query.replace(' ','-',2)
+    url = base_domain + "/{username}/replace_queue?{query}".format(username=settings['warpworld_username'], query=query)
     WW_handle_response(Parent.GetRequest(url, headers))
-
 
 def WW_leave(data):
     uid = YoutubeIdtoNumber(data.User)
@@ -175,7 +234,7 @@ def WW_leave(data):
     params = {
         "status": "leave",
         "viewerID": uid,
-        "username": data.UserName,
+        "username": data.UserName.encode('utf8'),
         "service": "youtube",
     }
     WW_handle_response(Parent.PostRequest(url, headers, params, True))
@@ -198,7 +257,7 @@ def WW_position(data):
         "position": 1,
         "token": settings['warpworld_key'],
         "viewerID": uid,
-        "viewerName": data.UserName,
+        "viewerName": data.UserName.encode('utf8'),
         "service": "youtube",
     }
     query = urllib.urlencode(params)
@@ -339,4 +398,5 @@ CMD_MAP = {
     "newsession": WW_newsession,
     "endsession": WW_endsession,
     "nextactive": next_active,
+    "replace": WW_replace,
 }
