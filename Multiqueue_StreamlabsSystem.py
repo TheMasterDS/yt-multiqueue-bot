@@ -35,7 +35,7 @@ def Init():
         settings = {
             "warpworld_username": "",
             "warpworld_key": "",
-            "command_character": "",
+            "command_character": "!",
             "permission_join": "Everyone",
             "permission_next": "Owner",
         }
