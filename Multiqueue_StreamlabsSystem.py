@@ -6,7 +6,6 @@ import urllib
 import os
 import ctypes
 import codecs
-import re
 
 ScriptName = "YT Multiqueue Bot"
 Website = "http://little-canada.org"
